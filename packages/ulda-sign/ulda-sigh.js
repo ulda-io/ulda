@@ -1,31 +1,31 @@
 class UldaSign {
     constructor(cfg = {}) {
         const g = (this.globalConfig = {
-            version: cfg.version ? ? "1",
-            fmt: { export: cfg ? .fmt ? .export ? ? "hex" },
+            version: cfg.version ?? "1",
+            fmt: { export: cfg?.fmt?.export ?? "hex" },
             sign: {
-                N: cfg ? .sign ? .N ? ? 5,
-                mode: cfg ? .sign ? .mode ? ? "S",
-                hash: cfg ? .sign ? .hash ? ? "SHA-256",
-                originSize: cfg ? .sign ? .originSize ? ? 256,
-                pack: cfg ? .sign ? .pack ? ? "simpleSig"
+                N: cfg?.sign?.N ?? 5,
+                mode: cfg?.sign?.mode ?? "S",
+                hash: cfg?.sign?.hash ?? "SHA-256",
+                originSize: cfg?.sign?.originSize ?? 256,
+                pack: cfg?.sign?.pack ?? "simpleSig"
             },
-            externalHashers: cfg.externalHashers ? ? {}
+            externalHashers: cfg.externalHashers ?? {}
         });
         const self = this;
         this.externalHashers = g.externalHashers;
-        const s = cfg.sign ? ? {};
+        const s = cfg.sign ?? {};
         if (typeof s.func === "function") {
-            const id = s.hash ? ? "custom";
+            const id = s.hash ?? "custom";
             g.externalHashers[id] = {
                 fn: s.func,
-                output: s.output ? ? "bytes",
-                size: s.originSize ? ? null,
-                cdn: s.cdn ? ? null,
+                output: s.output ?? "bytes",
+                size: s.originSize ?? null,
+                cdn: s.cdn ?? null,
                 ready: true
             };
-            this.encoder = this.encoder ? ? { algorithm: {} };
-            this.decoder = this.decoder ? ? { algorithm: {} };
+            this.encoder = this.encoder ?? { algorithm: {} };
+            this.decoder = this.decoder ?? { algorithm: {} };
             this.encoder.algorithm[id] = 0xff;
             this.decoder.algorithm[0xff] = id;
         }
@@ -62,11 +62,11 @@ class UldaSign {
                 cv.base64ToBytes(str),
             indexToBytes: idx => {
                 let b = typeof idx === "bigint" ? idx : BigInt(idx);
-                if (b === 0 n) return Uint8Array.of(0);
+                if (b === 0n) return Uint8Array.of(0);
                 const r = [];
-                while (b > 0 n) {
-                    r.unshift(Number(b & 0xff n));
-                    b >>= 8 n;
+                while (b > 0n) {
+                    r.unshift(Number(b & 0xffn));
+                    b >>= 8n;
                 }
                 return Uint8Array.from(r);
             },
@@ -80,14 +80,14 @@ class UldaSign {
             export: bytes =>
                 ({ base64: cv.bytesToBase64, bytes: x => x, hex: cv.bytesToHex }[
                     g.fmt.export
-                ] ? ? cv.bytesToHex)(bytes),
+                ] ?? cv.bytesToHex)(bytes),
             importToBytes: d =>
                 d instanceof Uint8Array ?
                 d :
-                ({ hex: cv.hexToBytes, base64: cv.base64ToBytes }[g.fmt.export] ? ?
+                ({ hex: cv.hexToBytes, base64: cv.base64ToBytes }[g.fmt.export] ??
                     cv.guessToBytes)(d),
             splitSig: p =>
-                p.blocks ? ?
+                p.blocks ??
                 (() => {
                     const { originLen, blkLen, sigBytes, N } = p,
                     a = [sigBytes.slice(0, originLen)];
@@ -108,7 +108,7 @@ class UldaSign {
                     ext.ready = true;
                 }
                 const raw = await ext.fn(u8),
-                    fmt = ext.output ? ? "bytes",
+                    fmt = ext.output ?? "bytes",
                     bytes =
                     fmt === "bytes" ?
                     raw :
@@ -137,7 +137,7 @@ class UldaSign {
                 return { sigBlocks: sig, final: sig.at(-1) };
             },
             _ladderX: async(blocks, alg = "SHA-256") => {
-                if (!blocks ? .length) throw "_ladderX: empty blocks";
+                if (!blocks?.length) throw "_ladderX: empty blocks";
                 const cat = cv.concatBytes,
                     sig = [blocks[0]];
                 let prev = blocks;
@@ -211,12 +211,12 @@ class UldaSign {
                         pkg instanceof Uint8Array ? pkg : cv.importToBytes(pkg),
                         hdr = bytes[1],
                         N = bytes[2],
-                        mode = self.decoder.mode[bytes[3]] ? ? "U",
-                        alg = self.decoder.algorithm[bytes[4]] ? ? "UNK";
-                    let idx = 0 n;
-                    for (let i = 5; i < hdr - 1; i++) idx = (idx << 8 n) | BigInt(bytes[i]);
+                        mode = self.decoder.mode[bytes[3]] ?? "U",
+                        alg = self.decoder.algorithm[bytes[4]] ?? "UNK";
+                    let idx = 0n;
+                    for (let i = 5; i < hdr - 1; i++) idx = (idx << 8n) | BigInt(bytes[i]);
                     const sigBytes = bytes.slice(hdr),
-                        originLen = (g.sign.originSize ? ? 256) >>> 3,
+                        originLen = (g.sign.originSize ?? 256) >>> 3,
                         rest = sigBytes.length - originLen,
                         blkLen = rest / (N - 1);
                     if (rest < 0 || !Number.isInteger(blkLen)) throw "SigImporter sizes";
@@ -231,10 +231,10 @@ class UldaSign {
                         hdr = bytes[1];
                     if (bytes[0] || bytes[hdr - 1]) throw "sentinel";
                     const N = bytes[2],
-                        mode = self.decoder.mode[bytes[3]] ? ? "U",
-                        alg = self.decoder.algorithm[bytes[4]] ? ? "UNK";
-                    let idx = 0 n;
-                    for (let i = 5; i < hdr - 1; i++) idx = (idx << 8 n) | BigInt(bytes[i]);
+                        mode = self.decoder.mode[bytes[3]] ?? "U",
+                        alg = self.decoder.algorithm[bytes[4]] ?? "UNK";
+                    let idx = 0n;
+                    for (let i = 5; i < hdr - 1; i++) idx = (idx << 8n) | BigInt(bytes[i]);
                     const body = bytes.slice(hdr),
                         blkLen = body.length / N;
                     if (!Number.isInteger(blkLen)) throw "div";
@@ -253,12 +253,12 @@ class UldaSign {
             RandomBlock: len => crypto.getRandomValues(new Uint8Array(len)),
             _hdr: (N, mode, alg, idxBytes) => {
                 const h = new Uint8Array(5 + idxBytes.length + 1);
-                h.set([0, h.length, N, self.encoder.mode[mode] ? ? 255, self.encoder.algorithm[alg] ? ? 255]);
+                h.set([0, h.length, N, self.encoder.mode[mode] ?? 255, self.encoder.algorithm[alg] ?? 255]);
                 h.set(idxBytes, 5);
                 h[h.length - 1] = 0;
                 return h;
             },
-            NewExporter: (originObj, index = 0 n) => {
+            NewExporter: (originObj, index = 0n) => {
                 const { N, mode, hash } = g.sign,
                     hdr = a._hdr(N, mode, hash, cv.indexToBytes(index));
                 return cv.export(cv.concatBytes(hdr, ...originObj.origin));
@@ -273,7 +273,7 @@ class UldaSign {
                 const { origin, blockLen, index } = a.import.origin(pkg),
                     next = origin.slice(1);
                 next.push(a.RandomBlock(blockLen));
-                return a.NewExporter({ origin: next }, index + 1 n);
+                return a.NewExporter({ origin: next }, index + 1n);
             }
         };
     }
@@ -289,7 +289,7 @@ class UldaSign {
         });
     }
 
-    New(i = 0 n) {
+    New(i = 0n) {
         return this.actions.NewExporter(this.actions.OriginGenerator(), i);
     }
     stepUp(pkg) {
@@ -304,3 +304,4 @@ class UldaSign {
 }
 
 export default UldaSign;
+
