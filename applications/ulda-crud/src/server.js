@@ -307,9 +307,10 @@ async function handleDelete(payload, trace) {
     return { error: "not found", status: 404 };
   }
   const storedKey = rows[0].ulda_key;
-  trace?.step("compare signatures");
-  if (!buffersEqual(storedKey, key)) {
-    return { error: "signature mismatch", status: 400 };
+  trace?.step("verify signature");
+  const verified = await uldaVerifier.verify(storedKey, key);
+  if (!verified) {
+    return { error: "signature verification failed", status: 400 };
   }
   trace?.step("db delete");
   await pool.execute("DELETE FROM main WHERE id = ?", [id]);

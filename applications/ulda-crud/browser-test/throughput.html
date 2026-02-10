@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ULDA CRUD Test</title>
+    <title>ULDA CRUD Throughput</title>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700&display=swap");
 
       :root {
         color-scheme: light;
         font-family: "Sora", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        --bg: #f5f4ff;
+        --bg: #f4f6ff;
         --card: #ffffff;
-        --ink: #14132b;
+        --ink: #121427;
         --muted: #5a6072;
         --accent: #2f6bff;
         --accent-soft: rgba(47, 107, 255, 0.12);
@@ -26,7 +26,7 @@
       }
 
       .card {
-        max-width: 980px;
+        max-width: 1100px;
         margin: 0 auto;
         background: var(--card);
         border: 1px solid var(--border);
@@ -44,7 +44,7 @@
       }
 
       h1 {
-        margin: 0 0 10px;
+        margin: 0 0 8px;
         font-size: 26px;
       }
 
@@ -56,19 +56,20 @@
         font-weight: 600;
       }
 
-      label {
-        display: block;
-        margin: 16px 0 8px;
-        font-weight: 600;
-      }
-
       .muted {
         color: var(--muted);
         font-size: 14px;
       }
 
+      label {
+        display: block;
+        margin: 12px 0 6px;
+        font-weight: 600;
+      }
+
       input,
-      textarea {
+      textarea,
+      select {
         width: 100%;
         border-radius: 10px;
         border: 1px solid var(--border);
@@ -79,15 +80,32 @@
         color: #1f1e33;
       }
 
-      textarea {
-        min-height: 120px;
-        resize: vertical;
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+      }
+
+      .row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 12px 0;
+      }
+
+      .row label {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
       }
 
       .buttons {
         display: flex;
         gap: 12px;
-        margin: 18px 0;
+        margin: 16px 0;
         flex-wrap: wrap;
       }
 
@@ -106,15 +124,14 @@
         background: #3a3f51;
       }
 
-      button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 8px 16px rgba(47, 107, 255, 0.2);
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 16px;
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 16px rgba(47, 107, 255, 0.2);
       }
 
       pre {
@@ -123,7 +140,7 @@
         padding: 16px;
         border-radius: 12px;
         white-space: pre-wrap;
-        min-height: 140px;
+        min-height: 160px;
       }
     </style>
   </head>
@@ -131,41 +148,46 @@
     <div class="card">
       <div class="header">
         <div>
-          <h1>ULDA CRUD Test</h1>
+          <h1>ULDA CRUD Throughput</h1>
           <p class="muted">Server: <span id="server"></span></p>
           <p class="muted">Config: <span id="config"></span></p>
         </div>
         <div class="status" id="status">idle</div>
       </div>
 
-      <label for="recordId">Record ID</label>
-      <input id="recordId" type="number" placeholder="ID from create" min="1" />
-
-      <div class="buttons">
-        <button id="createBtn">Create</button>
-        <button id="updateBtn">Update</button>
-        <button id="readBtn" class="secondary">Read</button>
-        <button id="deleteBtn" class="secondary">Delete</button>
-        <button id="throughputBtn" class="secondary">Throughput Test</button>
-      </div>
-
       <div class="grid">
         <div>
-          <label>Current Signature (hex)</label>
-          <textarea id="currentSig" readonly placeholder="Generated signature"></textarea>
+          <label for="recordCount">Records</label>
+          <input id="recordCount" type="number" min="1" value="20" />
         </div>
         <div>
-          <label>Current Content (base64)</label>
-          <textarea id="currentContent" readonly placeholder="Generated content"></textarea>
+          <label for="updatesPer">Updates per record</label>
+          <input id="updatesPer" type="number" min="0" value="3" />
+        </div>
+        <div>
+          <label for="concurrency">Concurrency</label>
+          <input id="concurrency" type="number" min="1" max="20" value="3" />
+        </div>
+        <div>
+          <label for="stressSeconds">Stress duration (sec)</label>
+          <input id="stressSeconds" type="number" min="1" value="10" />
         </div>
       </div>
 
-      <label>Metrics</label>
-      <pre id="metrics">{}</pre>
+      <div class="row">
+        <label><input id="doRead" type="checkbox" checked /> Read after updates</label>
+        <label><input id="doDelete" type="checkbox" checked /> Delete at end</label>
+      </div>
+
+      <div class="buttons">
+        <button id="runBtn">Run Test</button>
+        <button id="stressBtn" class="secondary">Stress 10s</button>
+        <button id="stopBtn" class="secondary" disabled>Stop</button>
+      </div>
 
       <pre id="output">{}</pre>
     </div>
 
-    <script type="module" src="./main.js"></script>
+    <script type="module" src="./throughput.js"></script>
   </body>
 </html>

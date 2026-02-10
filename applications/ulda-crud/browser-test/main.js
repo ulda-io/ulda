@@ -7,10 +7,12 @@ const outputEl = document.querySelector("#output");
 const statusEl = document.querySelector("#status");
 const serverEl = document.querySelector("#server");
 const configEl = document.querySelector("#config");
+const metricsEl = document.querySelector("#metrics");
 const createBtn = document.querySelector("#createBtn");
 const updateBtn = document.querySelector("#updateBtn");
 const readBtn = document.querySelector("#readBtn");
 const deleteBtn = document.querySelector("#deleteBtn");
+const throughputBtn = document.querySelector("#throughputBtn");
 
 const fallbackOrigin = location.origin === "null" ? "http://localhost:8787" : location.origin;
 const serverBase = new URLSearchParams(location.search).get("server") ?? fallbackOrigin;
@@ -28,6 +30,20 @@ const state = {
   index: 0
 };
 
+function makeMetrics() {
+  const base = () => ({ count: 0, failures: 0, clientMsTotal: 0, serverMsTotal: 0 });
+  return {
+    startedAt: performance.now(),
+    totalOps: 0,
+    create: base(),
+    update: base(),
+    read: base(),
+    delete: base()
+  };
+}
+
+const metrics = makeMetrics();
+
 function setStatus(text, tone = "idle") {
   statusEl.textContent = text;
   statusEl.style.background = tone === "error" ? "#ffe5e5" : "#e9efff";
@@ -36,6 +52,49 @@ function setStatus(text, tone = "idle") {
 
 function show(result) {
   outputEl.textContent = JSON.stringify(result, null, 2);
+}
+
+function recordMetric(name, result) {
+  const bucket = metrics[name];
+  if (!bucket) return;
+  bucket.count += 1;
+  metrics.totalOps += 1;
+  if (!result.ok) bucket.failures += 1;
+  bucket.clientMsTotal += result.clientMs ?? 0;
+  bucket.serverMsTotal += result.durationMs ?? 0;
+  updateMetricsUI();
+}
+
+function summarizeMetric(metric) {
+  const avgClient = metric.count ? metric.clientMsTotal / metric.count : 0;
+  const avgServer = metric.count ? metric.serverMsTotal / metric.count : 0;
+  return {
+    count: metric.count,
+    failures: metric.failures,
+    avgClientMs: Number(avgClient.toFixed(2)),
+    avgServerMs: Number(avgServer.toFixed(2))
+  };
+}
+
+function updateMetricsUI() {
+  if (!metricsEl) return;
+  const elapsedMs = performance.now() - metrics.startedAt;
+  const opsPerSec = elapsedMs ? metrics.totalOps / (elapsedMs / 1000) : 0;
+  metricsEl.textContent = JSON.stringify(
+    {
+      totals: {
+        totalOps: metrics.totalOps,
+        elapsedMs: Number(elapsedMs.toFixed(2)),
+        opsPerSec: Number(opsPerSec.toFixed(2))
+      },
+      create: summarizeMetric(metrics.create),
+      update: summarizeMetric(metrics.update),
+      read: summarizeMetric(metrics.read),
+      delete: summarizeMetric(metrics.delete)
+    },
+    null,
+    2
+  );
 }
 
 async function fetchJsonWithTiming(url, options) {
@@ -113,6 +172,7 @@ async function createRecord() {
       contentFormat: "base64"
     })
   });
+  recordMetric("create", { ok: data.ok, clientMs, durationMs: data.durationMs });
   if (!data.ok) {
     setStatus("error", "error");
     show({ ...data, clientMs });
@@ -154,6 +214,7 @@ async function updateRecord() {
       contentFormat: "base64"
     })
   });
+  recordMetric("update", { ok: data.ok, clientMs, durationMs: data.durationMs });
   if (!data.ok) {
     setStatus("error", "error");
     show({ ...data, clientMs });
@@ -182,6 +243,7 @@ async function readRecord() {
   const { data, clientMs } = await fetchJsonWithTiming(
     `${serverBase}/records/${id}?format=hex&contentFormat=base64`
   );
+  recordMetric("read", { ok: data.ok, clientMs, durationMs: data.durationMs });
   if (!data.ok) {
     setStatus("error", "error");
     show({ ...data, clientMs });
@@ -209,6 +271,7 @@ async function deleteRecord() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ulda_key: state.currentSig, format: "hex" })
   });
+  recordMetric("delete", { ok: data.ok, clientMs, durationMs: data.durationMs });
   if (!data.ok) {
     setStatus("error", "error");
     show({ ...data, clientMs });
@@ -249,6 +312,11 @@ deleteBtn.addEventListener("click", () => {
     setStatus("error", "error");
     show({ ok: false, error: err?.message ?? String(err) });
   });
+});
+
+throughputBtn.addEventListener("click", () => {
+  const search = location.search ?? "";
+  window.location.href = `./throughput.html${search}`;
 });
 
 loadConfig().catch(err => {
