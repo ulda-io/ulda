@@ -260,17 +260,29 @@ async function deleteRecord() {
     show({ ok: false, error: "Provide an id" });
     return;
   }
-  if (!state.currentSig) {
-    setStatus("missing signature", "error");
-    show({ ok: false, error: "No signature in memory" });
-    return;
-  }
-  setStatus("deleting...");
-  const { data, clientMs } = await fetchJsonWithTiming(`${serverBase}/records/${id}`, {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ulda_key: state.currentSig, format: "hex" })
-  });
+  if (!state.currentSig || !state.originPkg || !state.ulda) {
+  setStatus("missing session", "error");
+  show({ ok: false, error: "Need origin package in memory (create a record in this session first)" });
+  return;
+}
+
+// Generate forward signature for the delete operation
+const nextOrigin = state.ulda.stepUp(state.originPkg);
+const sigDel = await state.ulda.sign(nextOrigin);
+
+setStatus("deleting...");
+const { data, clientMs } = await fetchJsonWithTiming(`${serverBase}/records/${id}`, {
+  method: "DELETE",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ ulda_key: sigDel, format: "hex" })
+});
+
+// if successful — update local state before clearing
+if (data.ok) {
+  state.originPkg = nextOrigin;
+  state.currentSig = sigDel;
+}
+
   recordMetric("delete", { ok: data.ok, clientMs, durationMs: data.durationMs });
   if (!data.ok) {
     setStatus("error", "error");

@@ -172,13 +172,25 @@ async function readRecord(record) {
 }
 
 async function deleteRecord(record) {
+  // For DELETE the server expects a "forward" signature (the next state), otherwise verify() will fail.
+  const nextOrigin = state.ulda.stepUp(record.originPkg);
+  const sigDel = await state.ulda.sign(nextOrigin);
+
   const { data, clientMs } = await fetchJsonWithTiming(`${serverBase}/records/${record.id}`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ulda_key: record.sigA, format: "hex" })
+    body: JSON.stringify({ ulda_key: sigDel, format: "hex" })
   });
+
+  // if delete succeeds — record that we've "consumed" the step
+  if (data.ok) {
+    record.originPkg = nextOrigin;
+    record.sigA = sigDel;
+  }
+
   return { data, clientMs };
 }
+
 
 async function runTest() {
   setStatus("running...");
