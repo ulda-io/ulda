@@ -620,6 +620,7 @@ if (isMain) {
   start().then(({ port }) => {
     console.log(`ulda-crud listening on http://localhost:${port}`);
     console.log(`browser test: http://localhost:${port}/browser-test/`);
+    console.log("Throughput (workers): http://localhost:8787/browser-test/throughput-workers.html");
   });
 }
 

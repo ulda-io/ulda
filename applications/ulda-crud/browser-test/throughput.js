@@ -331,8 +331,8 @@ async function runStress() {
   state.cancelled = false;
   state.running = true;
 
-  const count = Math.max(1, Number(recordCountEl.value || 1));
   const concurrency = Math.max(1, Number(concurrencyEl.value || 1));
+  const count = Math.max(concurrency, Number(recordCountEl.value || 1));
   const durationMs = Math.max(1, Number(stressSecondsEl.value || 10)) * 1000;
   const doRead = doReadEl.checked;
   const doDelete = doDeleteEl.checked;
@@ -372,33 +372,34 @@ async function runStress() {
 
     setStatus("stress: hammering updates...");
     const endAt = performance.now() + durationMs;
-    let cursor = 0;
 
     await mapWithConcurrency(
-      Array.from({ length: concurrency }),
-      concurrency,
-      async () => {
-        while (performance.now() < endAt) {
-          checkCancelled();
-          const record = records[cursor % records.length];
-          cursor += 1;
-          const update = await updateRecord(record);
-          recordMetric(metrics, "update", {
-            ok: update.data.ok,
-            clientMs: update.clientMs,
-            durationMs: update.data.durationMs
+    Array.from({ length: concurrency }),
+    concurrency,
+    async (_, workerId) => {
+      const record = records[workerId];
+
+      while (performance.now() < endAt) {
+        checkCancelled();
+
+        const update = await updateRecord(record);
+        recordMetric(metrics, "update", {
+          ok: update.data.ok,
+          clientMs: update.clientMs,
+          durationMs: update.data.durationMs
+        });
+
+        if (doRead) {
+          const read = await readRecord(record);
+          recordMetric(metrics, "read", {
+            ok: read.data.ok,
+            clientMs: read.clientMs,
+            durationMs: read.data.durationMs
           });
-          if (doRead) {
-            const read = await readRecord(record);
-            recordMetric(metrics, "read", {
-              ok: read.data.ok,
-              clientMs: read.clientMs,
-              durationMs: read.data.durationMs
-            });
-          }
         }
       }
-    );
+    }
+  );
 
     if (doDelete) {
       setStatus("stress: deleting...");

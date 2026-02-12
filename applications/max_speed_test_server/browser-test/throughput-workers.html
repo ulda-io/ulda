@@ -1,0 +1,214 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ULDA Max Speed Throughput (Workers)</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+      :root {
+        color-scheme: light;
+        --bg: #f7faf4;
+        --card: #ffffff;
+        --ink: #152118;
+        --muted: #4f6055;
+        --line: #d9e4d8;
+        --accent: #1e7a4a;
+        --accent-soft: #e9f8ee;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Manrope", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(1000px 300px at 10% -10%, #e7f3df 0%, transparent 70%),
+          linear-gradient(180deg, #f7faf4 0%, #edf5ea 100%);
+      }
+
+      main {
+        max-width: 1120px;
+        margin: 24px auto;
+        padding: 0 16px 20px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+      }
+
+      h1 { margin: 0 0 6px; font-size: clamp(22px, 4vw, 30px); }
+      .muted { margin: 0; color: var(--muted); font-size: 14px; }
+
+      .grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+      }
+
+      .field {
+        background: #fbfef9;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 700;
+      }
+
+      .field input,
+      .field select {
+        width: 100%;
+        border: 1px solid #c8d7c0;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 13px;
+        background: #fff;
+      }
+
+      .row { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+      .check {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        background: #fbfef9;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      #runBtn { background: var(--accent); color: #fff; }
+      #stopBtn { background: #39493f; color: #fff; }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+      .chip {
+        border-radius: 999px;
+        padding: 4px 10px;
+        border: 1px solid #cae8d6;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .stats {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+      }
+
+      .kpi {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      .kpi .name {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .kpi .value {
+        margin-top: 4px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      pre {
+        margin-top: 12px;
+        margin-bottom: 0;
+        background: #f3fbf3;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card">
+        <h1>ULDA Throughput (Web Workers)</h1>
+        <p class="muted">Model: 1 worker = 1 client = 1 record</p>
+        <p class="muted">Server: <span id="server"></span></p>
+        <p class="muted">Config: <span id="config">loading...</span></p>
+
+        <div class="grid">
+          <div class="field">
+            <label for="concurrency">Concurrency</label>
+            <input id="concurrency" type="number" min="1" value="100" />
+          </div>
+          <div class="field">
+            <label for="durationMs">Duration (ms)</label>
+            <input id="durationMs" type="number" min="1" value="10000" />
+          </div>
+          <div class="field">
+            <label for="contentBytes">Content bytes</label>
+            <input id="contentBytes" type="number" min="1" value="32" />
+          </div>
+          <div class="field">
+            <label for="signatureFormat">Signature format</label>
+            <select id="signatureFormat">
+              <option value="base64" selected>base64</option>
+              <option value="hex">hex</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <label class="check"><input id="doRead" type="checkbox" checked /> Read after each update</label>
+          <label class="check"><input id="doDelete" type="checkbox" checked /> Delete at end</label>
+        </div>
+
+        <div class="row">
+          <button id="runBtn">Run</button>
+          <button id="stopBtn" disabled>Stop</button>
+          <span class="chip" id="status">idle</span>
+          <span class="chip" id="progress">0 / 0</span>
+        </div>
+      </section>
+
+      <section class="stats">
+        <article class="kpi"><div class="name">Total ops</div><div class="value" id="totalOps">0</div></article>
+        <article class="kpi"><div class="name">Elapsed ms</div><div class="value" id="totalMs">0</div></article>
+        <article class="kpi"><div class="name">Ops/sec</div><div class="value" id="opsPerSec">0</div></article>
+        <article class="kpi"><div class="name">Worker errors</div><div class="value" id="workerErrors">0</div></article>
+      </section>
+
+      <pre id="output">{}</pre>
+    </main>
+
+    <script type="module" src="./throughput-workers.js"></script>
+  </body>
+</html>
