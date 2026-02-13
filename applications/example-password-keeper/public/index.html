@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ULDA Password Keeper Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>ULDA Password Keeper (Demo)</h1>
+        <p>Single-page demo for encrypted cabinet data over REST or Socket.IO.</p>
+      </header>
+
+      <section class="card">
+        <h2>Connection</h2>
+        <div class="grid">
+          <label>
+            Server URL
+            <input id="serverUrl" type="text" />
+          </label>
+          <label>
+            Transport
+            <select id="transport">
+              <option value="rest">REST</option>
+              <option value="socket">Socket.IO</option>
+            </select>
+          </label>
+          <label>
+            Cabinet ID
+            <input id="cabinetId" type="text" placeholder="empty for create" />
+          </label>
+          <label>
+            Master Password
+            <input id="masterPassword" type="password" placeholder="required" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="createBtn">Create Cabinet</button>
+          <button id="connectBtn">Connect</button>
+          <button id="reloadBtn">Reload</button>
+          <button id="saveBtn">Save All</button>
+          <button id="deleteCabinetBtn" class="danger">Delete Cabinet</button>
+          <button id="closeBtn">Close</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Add Secret</h2>
+        <div class="grid">
+          <label>
+            Title
+            <input id="newTitle" type="text" placeholder="GitHub" />
+          </label>
+          <label>
+            Username
+            <input id="newUser" type="text" placeholder="alice@example.com" />
+          </label>
+          <label>
+            Password
+            <input id="newPass" type="password" />
+          </label>
+          <label>
+            Note
+            <input id="newNote" type="text" placeholder="optional" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="addBtn">Add Secret</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Secrets</h2>
+        <div id="entries" class="entries"></div>
+      </section>
+
+      <section class="card">
+        <h2>Runtime</h2>
+        <p id="status">Disconnected</p>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
