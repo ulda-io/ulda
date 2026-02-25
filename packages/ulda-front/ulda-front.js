@@ -222,8 +222,6 @@ async function encryptEnvelopeInternal({ role, plaintext, key, kdfIterations }) 
   );
 
   return encodeEnvelope({
-    v: 1,
-    role,
     enc: "A256GCM",
     iv: bytesToBase64(iv),
     ct: bytesToBase64(encrypted),
@@ -233,11 +231,11 @@ async function encryptEnvelopeInternal({ role, plaintext, key, kdfIterations }) 
 
 async function decryptEnvelopeInternal({ role, encrypted, key }) {
   const envelope = decodeEnvelope(encrypted);
-  if (!isPlainObject(envelope) || envelope.v !== 1 || envelope.enc !== "A256GCM") {
+  if (!isPlainObject(envelope) || envelope.enc !== "A256GCM") {
     throw new UldaSecurityError("Unsupported or malformed envelope");
   }
-  if (envelope.role !== role) {
-    throw new UldaSecurityError(`Envelope role mismatch. Expected "${role}" got "${envelope.role}"`);
+  if (envelope.v != null && envelope.v !== 1) {
+    throw new UldaSecurityError("Unsupported envelope version");
   }
   const iv = base64ToBytes(String(envelope.iv ?? ""));
   const ct = base64ToBytes(String(envelope.ct ?? ""));
