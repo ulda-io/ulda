@@ -3,7 +3,6 @@ import UldaFront, {
   createSocketIOAdapter
 } from "/packages/ulda-front/ulda-front.js";
 
-const INDEX_KEY = "__index";
 const ENTRY_PREFIX = "entry_";
 
 const ui = {
@@ -86,36 +85,11 @@ function randomId() {
   return [...bytes].map(v => v.toString(16).padStart(2, "0")).join("");
 }
 
-function readIndex() {
-  const idx = state.client?.data?.[INDEX_KEY];
-  if (!Array.isArray(idx)) return [];
-  return idx.filter(v => typeof v === "string" && v.length > 0);
-}
-
-function deriveIndexFromPayload() {
+function listEntryIds() {
+  if (!state.client?.data) return [];
   return Object.keys(state.client.data)
     .filter(k => k.startsWith(ENTRY_PREFIX))
     .map(k => k.slice(ENTRY_PREFIX.length));
-}
-
-async function ensureVaultShape({ persist } = { persist: false }) {
-  ensureConnected();
-  let changed = false;
-  const current = readIndex();
-  if (!Array.isArray(state.client.data[INDEX_KEY])) {
-    const derived = deriveIndexFromPayload();
-    state.client.data[INDEX_KEY] = derived;
-    changed = true;
-  } else if (current.length === 0) {
-    const derived = deriveIndexFromPayload();
-    if (derived.length > 0) {
-      state.client.data[INDEX_KEY] = derived;
-      changed = true;
-    }
-  }
-  if (changed && persist) {
-    await state.client.update();
-  }
 }
 
 async function closeSession() {
@@ -183,7 +157,6 @@ async function createCabinet() {
   const result = await state.client.create({ password, serverConnection: serverUrl });
   state.connected = true;
   ui.cabinetId.value = String(result.id);
-  await ensureVaultShape({ persist: true });
   renderEntries();
   setStatus(`Connected to cabinet #${result.id}`);
   log("Cabinet created", result);
@@ -213,7 +186,6 @@ async function connectCabinet() {
     serverConnection: serverUrl
   });
   state.connected = true;
-  await ensureVaultShape({ persist: false });
   renderEntries();
   setStatus(`Connected to cabinet #${result.id}`);
   log("Cabinet connected", result);
@@ -230,7 +202,6 @@ async function forceSave() {
 async function reloadCabinet() {
   ensureConnected();
   const result = await state.client.reload();
-  await ensureVaultShape({ persist: false });
   renderEntries();
   setStatus("Reloaded");
   log("Reload complete", result);
@@ -262,7 +233,6 @@ async function addSecret() {
     note,
     updatedAt: new Date().toISOString()
   };
-  state.client.data[INDEX_KEY] = [...readIndex(), id];
   await state.client.update();
 
   ui.newTitle.value = "";
@@ -297,7 +267,6 @@ async function saveEntry(id, element) {
 async function deleteEntry(id) {
   ensureConnected();
   delete state.client.data[entryKey(id)];
-  state.client.data[INDEX_KEY] = readIndex().filter(v => v !== id);
   await state.client.update();
   renderEntries();
   setStatus(`Secret ${id} deleted`);
@@ -313,7 +282,7 @@ function renderEntries() {
     return;
   }
 
-  const ids = readIndex();
+  const ids = listEntryIds();
   if (!ids.length) {
     const empty = document.createElement("p");
     empty.textContent = "No secrets yet.";
