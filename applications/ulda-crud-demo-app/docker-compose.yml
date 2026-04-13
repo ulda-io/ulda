@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ulda_demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ulda_demo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3010
+      BYTES_CODEC: base64
+      DATABASE_URL: postgres://postgres:postgres@db:5432/ulda_demo
+    ports:
+      - "3010:3010"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3010/health >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  smoke:
+    image: node:22-alpine
+    working_dir: /work
+    profiles: ["test"]
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_URL: http://app:3010
+    command: ["node", "scripts/smoke-test.mjs"]
+
+volumes:
+  pg_data:

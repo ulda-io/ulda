@@ -1,0 +1,12 @@
+{
+  "name": "ulda-crud-demo-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "smoke": "node scripts/smoke-test.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}
