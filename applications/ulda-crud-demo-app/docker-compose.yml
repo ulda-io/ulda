@@ -22,8 +22,9 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 3010
-      BYTES_CODEC: base64
       DATABASE_URL: postgres://postgres:postgres@db:5432/ulda_demo
+      BYTES_CODEC: base64
+      WS_PATH: /ws
     ports:
       - "3010:3010"
     healthcheck:
@@ -32,10 +33,10 @@ services:
       timeout: 3s
       retries: 20
 
-  smoke:
+  smoke-rest:
     image: node:22-alpine
-    working_dir: /work
     profiles: ["test"]
+    working_dir: /work
     depends_on:
       app:
         condition: service_healthy
@@ -43,7 +44,70 @@ services:
       - .:/work
     environment:
       BASE_URL: http://app:3010
-    command: ["node", "scripts/smoke-test.mjs"]
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/smoke-rest.mjs"]
+
+  smoke-ws:
+    image: node:22-alpine
+    profiles: ["test"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_WS_URL: ws://app:3010/ws
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/smoke-ws.mjs"]
+
+  smoke-race:
+    image: node:22-alpine
+    profiles: ["test"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_URL: http://app:3010
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/smoke-race.mjs"]
+
+
+  bench-rest:
+    image: node:22-alpine
+    profiles: ["bench"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_URL: http://app:3010
+      BENCH_TRANSPORT: rest
+      BENCH_MODE: update
+      BENCH_DURATION_MS: 10000
+      BENCH_CONCURRENCY: 20
+      BENCH_PAYLOAD_BYTES: 64
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/bench-throughput.mjs"]
+
+  bench-ws:
+    image: node:22-alpine
+    profiles: ["bench"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_WS_URL: ws://app:3010/ws
+      BENCH_TRANSPORT: ws
+      BENCH_MODE: update
+      BENCH_DURATION_MS: 10000
+      BENCH_CONCURRENCY: 20
+      BENCH_PAYLOAD_BYTES: 64
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/bench-throughput.mjs"]
 
 volumes:
   pg_data:

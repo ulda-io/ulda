@@ -1,50 +1,90 @@
 # ulda-crud-demo-app
 
-Минимальная self-contained демка:
-- публичный HTTP сервер;
-- PostgreSQL поднимается через Docker Compose;
-- схема инициализируется автоматически через `db/init/001_init.sql`;
-- есть smoke-test без ручного подключения к БД.
+Минимальная self-contained демка с несколькими smoke-тестами:
+- core smoke без сети;
+- REST smoke;
+- WebSocket smoke;
+- race smoke для compare-and-swap.
 
-## Что это делает
+## Что проверяется
 
-Это не боевой ULDA-сервер, а минимальная демка приложения вокруг `UldaServerCRUD`.
-По умолчанию она использует `DemoSigner`, чтобы проверить:
-- transport;
-- pipeline;
-- PostgreSQL adapter;
-- compare-and-swap для update/delete;
-- публичные маршруты.
+### smoke-core
+Проверяет только ядро:
+- create
+- read
+- update
+- verify fail
+- delete
+- read after delete
 
-`DemoSigner` только проверяет, что новая подпись не пустая и отличается от предыдущей.
-Для боевого режима его нужно заменить на реальный `UldaSign` из твоей монорепы.
+Запуск локально:
 
-## Быстрый запуск
+```bash
+npm install
+npm run smoke:core
+```
+
+### smoke-rest
+Проверяет:
+- HTTP transport
+- route -> action mapping
+- JSON body
+- base64 codec
+- HTTP statuses
+
+### smoke-ws
+Проверяет:
+- WebSocket transport `/ws`
+- envelope `{ op, body }`
+- reuse одного и того же core
+
+### smoke-race
+Проверяет:
+- два параллельных update от одной и той же старой подписи
+- ожидается: один `200`, один `409`
+
+## Быстрый запуск сервера
 
 ```bash
 docker compose up --build
 ```
 
 После старта:
-- API: `http://127.0.0.1:3010`
-- health: `http://127.0.0.1:3010/health`
+- HTTP: `http://127.0.0.1:3010`
+- Health: `http://127.0.0.1:3010/health`
+- WS: `ws://127.0.0.1:3010/ws`
 
-## Smoke test
+## Запуск smoke-тестов в Docker
 
-```bash
-docker compose --profile test up --build --abort-on-container-exit smoke
-```
-
-Если хочешь оставить app и db работать в фоне:
+REST:
 
 ```bash
-docker compose up -d --build
-docker compose run --rm smoke
+docker compose --profile test up --build --abort-on-container-exit smoke-rest
 ```
 
-## Маршруты
+WebSocket:
 
-Все CRUD маршруты принимают `POST` и короткое body:
+```bash
+docker compose --profile test up --build --abort-on-container-exit smoke-ws
+```
+
+Race:
+
+```bash
+docker compose --profile test up --build --abort-on-container-exit smoke-race
+```
+
+Если сервер уже поднят в фоне:
+
+```bash
+docker compose run --rm smoke-rest
+docker compose run --rm smoke-ws
+docker compose run --rm smoke-race
+```
+
+## Формат body
+
+Во всех CRUD transport-ах логическая форма остаётся одной и той же:
 
 ```json
 {
@@ -54,80 +94,87 @@ docker compose run --rm smoke
 }
 ```
 
-### Create
-`POST /create`
+### Для WebSocket
+
+Транспортный envelope такой:
 
 ```json
 {
-  "id": null,
-  "ulda": "c2lnbi0x",
-  "load": "aGVsbG8="
-}
-```
-
-### Read
-`POST /read`
-
-```json
-{
-  "id": "1",
-  "ulda": "",
-  "load": ""
-}
-```
-
-### Update
-`POST /update`
-
-```json
-{
-  "id": "1",
-  "ulda": "c2lnbi0y",
-  "load": "d29ybGQ="
-}
-```
-
-### Delete
-`POST /delete`
-
-```json
-{
-  "id": "1",
-  "ulda": "c2lnbi0z",
-  "load": ""
-}
-```
-
-## Что хранится в БД
-
-Только это:
-- `id`
-- `sign`
-- `data`
-- `create_time`
-- `update_time`
-
-## Как заменить signer на реальный ULDA
-
-В `src/server.mjs` замени:
-
-```js
-import DemoSigner from './DemoSigner.mjs';
-const signer = new DemoSigner();
-```
-
-на реальный импорт из твоей монорепы, например:
-
-```js
-import UldaSign from '../packages/ulda-sign/ulda-sign.js';
-const signer = new UldaSign({
-  sign: {
-    N: 5,
-    mode: 'X',
-    hash: 'SHA-256',
-    originSize: 256
+  "op": "update",
+  "body": {
+    "id": "1",
+    "ulda": "base64",
+    "load": "base64"
   }
-});
+}
 ```
 
-При этом сам сервер уже будет использовать у signer только `verify()`.
+## Важный момент
+
+В этой демке стоит `DemoSigner`, а не реальный `ulda-sign`.
+Он нужен только для transport/db/cas smoke-тестов.
+Чтобы использовать настоящий ULDA, замени `DemoSigner` в `src/server.mjs` на импорт твоего реального `UldaSign`.
+
+
+## Throughput benchmark на 10 секунд
+
+Добавлен отдельный benchmark-скрипт `scripts/bench-throughput.mjs`.
+По умолчанию он меряет режим `update`, то есть именно путь:
+
+```
+read -> verify -> compare-and-swap update
+```
+
+Параметры по умолчанию:
+- duration: `10000 ms`
+- concurrency: `20`
+- payload: `64 bytes`
+- mode: `update`
+
+### REST benchmark
+
+```bash
+docker compose --profile bench up --build --abort-on-container-exit bench-rest
+```
+
+### WebSocket benchmark
+
+```bash
+docker compose --profile bench up --build --abort-on-container-exit bench-ws
+```
+
+Если сервер уже поднят в фоне:
+
+```bash
+docker compose run --rm bench-rest
+docker compose run --rm bench-ws
+```
+
+### Локальный запуск
+
+```bash
+npm install
+BENCH_TRANSPORT=rest BENCH_DURATION_MS=10000 npm run bench:throughput
+```
+
+### Доступные env-параметры
+
+- `BENCH_TRANSPORT=rest|ws`
+- `BENCH_MODE=create|read|update`
+- `BENCH_DURATION_MS=10000`
+- `BENCH_CONCURRENCY=20`
+- `BENCH_PAYLOAD_BYTES=64`
+- `BASE_URL=http://127.0.0.1:3010`
+- `BASE_WS_URL=ws://127.0.0.1:3010/ws`
+
+### Что выводится
+
+Скрипт печатает JSON-отчёт:
+- `totalOps`
+- `okOps`
+- `failedOps`
+- `statusCounts`
+- `opsPerSec`
+- `avgLatencyMs`
+- `minLatencyMs`
+- `maxLatencyMs`
