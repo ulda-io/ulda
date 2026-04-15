@@ -1,0 +1,193 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ULDA CRUD Throughput</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700&display=swap");
+
+      :root {
+        color-scheme: light;
+        font-family: "Sora", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        --bg: #f4f6ff;
+        --card: #ffffff;
+        --ink: #121427;
+        --muted: #5a6072;
+        --accent: #2f6bff;
+        --accent-soft: rgba(47, 107, 255, 0.12);
+        --border: #e2e4ef;
+      }
+
+      body {
+        margin: 24px;
+        background: radial-gradient(1100px 620px at 12% -10%, #e7ecff 0%, #f7f5ff 46%, #f2f1f8 100%);
+        color: var(--ink);
+      }
+
+      .card {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 20px 40px rgba(20, 19, 43, 0.08);
+      }
+
+      .header {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 26px;
+      }
+
+      .status {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      label {
+        display: block;
+        margin: 12px 0 6px;
+        font-weight: 600;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 13px;
+        background: #fafaff;
+        color: #1f1e33;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+      }
+
+      .row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 12px 0;
+      }
+
+      .row label {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+
+      .buttons {
+        display: flex;
+        gap: 12px;
+        margin: 16px 0;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 18px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      button.secondary {
+        background: #3a3f51;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 16px rgba(47, 107, 255, 0.2);
+      }
+
+      pre {
+        background: #15162b;
+        color: #e4e6f6;
+        padding: 16px;
+        border-radius: 12px;
+        white-space: pre-wrap;
+        min-height: 160px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1>ULDA CRUD Throughput</h1>
+          <p class="muted">Server: <span id="server"></span></p>
+          <p class="muted">Config: <span id="config"></span></p>
+        </div>
+        <div class="status" id="status">idle</div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label for="recordCount">Records</label>
+          <input id="recordCount" type="number" min="1" value="20" />
+        </div>
+        <div>
+          <label for="updatesPer">Updates per record</label>
+          <input id="updatesPer" type="number" min="0" value="3" />
+        </div>
+        <div>
+          <label for="concurrency">Concurrency</label>
+          <input id="concurrency" type="number" min="1" max="20" value="3" />
+        </div>
+        <div>
+          <label for="stressSeconds">Stress duration (sec)</label>
+          <input id="stressSeconds" type="number" min="1" value="10" />
+        </div>
+      </div>
+
+      <div class="row">
+        <label><input id="doRead" type="checkbox" checked /> Read after updates</label>
+        <label><input id="doDelete" type="checkbox" checked /> Delete at end</label>
+      </div>
+
+      <div class="buttons">
+        <button id="runBtn">Run Test</button>
+        <button id="stressBtn" class="secondary">Stress 10s</button>
+        <button id="stopBtn" class="secondary" disabled>Stop</button>
+      </div>
+
+      <pre id="output">{}</pre>
+    </div>
+
+    <script type="module" src="./throughput-workers.js"></script>
+  </body>
+</html>

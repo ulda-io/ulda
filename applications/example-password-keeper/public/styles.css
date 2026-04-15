@@ -1,0 +1,169 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f8fa;
+  --card: #ffffff;
+  --text: #111318;
+  --muted: #5b6472;
+  --line: #d8dce4;
+  --accent: #0969da;
+  --danger: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 40%);
+  color: var(--text);
+}
+
+.page {
+  width: min(1100px, 96%);
+  margin: 28px auto;
+  display: grid;
+  gap: 14px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.hero p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button {
+  border: 1px solid #1f61b3;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #fff;
+  color: #1f61b3;
+}
+
+button.danger {
+  background: #fff;
+  color: var(--danger);
+  border-color: #d5a4a1;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#status {
+  margin: 0;
+  font-weight: 600;
+}
+
+#log {
+  margin-top: 10px;
+  max-height: 220px;
+  overflow: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+}
+
+.entries {
+  display: grid;
+  gap: 10px;
+}
+
+.entry {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fcfdff;
+}
+
+.entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.entry-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .actions {
+    flex-direction: column;
+  }
+  .entry-actions {
+    flex-direction: column;
+  }
+}

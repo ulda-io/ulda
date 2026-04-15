@@ -1,0 +1,113 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ulda_demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ulda_demo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3010
+      DATABASE_URL: postgres://postgres:postgres@db:5432/ulda_demo
+      BYTES_CODEC: base64
+      WS_PATH: /ws
+    ports:
+      - "3010:3010"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3010/health >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  smoke-rest:
+    image: node:22-alpine
+    profiles: ["test"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_URL: http://app:3010
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/smoke-rest.mjs"]
+
+  smoke-ws:
+    image: node:22-alpine
+    profiles: ["test"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_WS_URL: ws://app:3010/ws
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/smoke-ws.mjs"]
+
+  smoke-race:
+    image: node:22-alpine
+    profiles: ["test"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_URL: http://app:3010
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/smoke-race.mjs"]
+
+
+  bench-rest:
+    image: node:22-alpine
+    profiles: ["bench"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_URL: http://app:3010
+      BENCH_TRANSPORT: rest
+      BENCH_MODE: update
+      BENCH_DURATION_MS: 10000
+      BENCH_CONCURRENCY: 20
+      BENCH_PAYLOAD_BYTES: 64
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/bench-throughput.mjs"]
+
+  bench-ws:
+    image: node:22-alpine
+    profiles: ["bench"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - .:/work
+    environment:
+      BASE_WS_URL: ws://app:3010/ws
+      BENCH_TRANSPORT: ws
+      BENCH_MODE: update
+      BENCH_DURATION_MS: 10000
+      BENCH_CONCURRENCY: 20
+      BENCH_PAYLOAD_BYTES: 64
+    command: ["sh", "-lc", "npm install --omit=dev >/dev/null 2>&1 && node scripts/bench-throughput.mjs"]
+
+volumes:
+  pg_data:

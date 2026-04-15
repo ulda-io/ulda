@@ -1,0 +1,21 @@
+{
+  "name": "ulda-crud",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Simple ULDA CRUD server backed by MySQL.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mysql2": "^3.10.0",
+    "nodemon": "^3.1.11",
+    "socket.io": "^4.7.5"
+  }
+}

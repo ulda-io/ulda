@@ -1,0 +1,18 @@
+{
+  "name": "max_speed_test_server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "In-memory ULDA CRUD server for max speed HTTP stress testing.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node src/server.js",
+    "stress": "node scripts/stress-http-100-clients.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

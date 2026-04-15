@@ -1,0 +1,171 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ULDA CRUD Test</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700&display=swap");
+
+      :root {
+        color-scheme: light;
+        font-family: "Sora", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        --bg: #f5f4ff;
+        --card: #ffffff;
+        --ink: #14132b;
+        --muted: #5a6072;
+        --accent: #2f6bff;
+        --accent-soft: rgba(47, 107, 255, 0.12);
+        --border: #e2e4ef;
+      }
+
+      body {
+        margin: 24px;
+        background: radial-gradient(1100px 620px at 12% -10%, #e7ecff 0%, #f7f5ff 46%, #f2f1f8 100%);
+        color: var(--ink);
+      }
+
+      .card {
+        max-width: 980px;
+        margin: 0 auto;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 20px 40px rgba(20, 19, 43, 0.08);
+      }
+
+      .header {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 26px;
+      }
+
+      .status {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      label {
+        display: block;
+        margin: 16px 0 8px;
+        font-weight: 600;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 13px;
+        background: #fafaff;
+        color: #1f1e33;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      .buttons {
+        display: flex;
+        gap: 12px;
+        margin: 18px 0;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 18px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      button.secondary {
+        background: #3a3f51;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 16px rgba(47, 107, 255, 0.2);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+
+      pre {
+        background: #15162b;
+        color: #e4e6f6;
+        padding: 16px;
+        border-radius: 12px;
+        white-space: pre-wrap;
+        min-height: 140px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1>ULDA CRUD Test</h1>
+          <p class="muted">Server: <span id="server"></span></p>
+          <p class="muted">Config: <span id="config"></span></p>
+        </div>
+        <div class="status" id="status">idle</div>
+      </div>
+
+      <label for="recordId">Record ID</label>
+      <input id="recordId" type="number" placeholder="ID from create" min="1" />
+
+      <div class="buttons">
+        <button id="createBtn">Create</button>
+        <button id="updateBtn">Update</button>
+        <button id="readBtn" class="secondary">Read</button>
+        <button id="deleteBtn" class="secondary">Delete</button>
+        <button id="throughputBtn" class="secondary">Throughput Test</button>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Current Signature (hex)</label>
+          <textarea id="currentSig" readonly placeholder="Generated signature"></textarea>
+        </div>
+        <div>
+          <label>Current Content (base64)</label>
+          <textarea id="currentContent" readonly placeholder="Generated content"></textarea>
+        </div>
+      </div>
+
+      <label>Metrics</label>
+      <pre id="metrics">{}</pre>
+
+      <pre id="output">{}</pre>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
